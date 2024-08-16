@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { memoServiceClient } from "@/grpcweb";
 import { useTagStore } from "@/store/module";
+import { useTranslate } from "@/utils/i18n";
 import { useMemoStore } from "@/store/v1";
 import { User } from "@/types/proto/api/v2/user_service";
 import Icon from "./Icon";
@@ -11,6 +12,7 @@ interface Props {
 
 const PersonalStatistics = (props: Props) => {
   const { user } = props;
+  const t = useTranslate();
   const tagStore = useTagStore();
   const memoStore = useMemoStore();
   const [memoAmount, setMemoAmount] = useState(0);
