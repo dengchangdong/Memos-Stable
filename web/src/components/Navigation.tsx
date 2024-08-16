@@ -65,12 +65,15 @@ const Navigation = (props: Props) => {
     title: t("common.explore"),
     icon: <Icon.Globe2 className="mr-3 w-6 h-auto opacity-70" />,
   };
+  /*
   const profileNavLink: NavLinkItem = {
     id: "header-profile",
     path: user ? `/u/${encodeURIComponent(user.username)}` : "",
     title: t("common.profile"),
     icon: <Icon.User2 className="mr-3 w-6 h-auto opacity-70" />,
   };
+  */
+  /*
   const inboxNavLink: NavLinkItem = {
     id: "header-inbox",
     path: "/inbox",
@@ -84,6 +87,7 @@ const Navigation = (props: Props) => {
       </>
     ),
   };
+  */
   const archivedNavLink: NavLinkItem = {
     id: "header-archived",
     path: "/archived",
@@ -102,12 +106,14 @@ const Navigation = (props: Props) => {
     title: t("common.sign-in"),
     icon: <Icon.LogIn className="mr-3 w-6 h-auto opacity-70" />,
   };
+  /*
   const aboutNavLink: NavLinkItem = {
     id: "header-about",
     path: "/about",
     title: t("common.about"),
     icon: <Icon.Smile className="mr-3 w-6 h-auto opacity-70" />,
   };
+  */
 
   const navLinks: NavLinkItem[] = user
     ? [homeNavLink, timelineNavLink, resourcesNavLink, exploreNavLink, profileNavLink, inboxNavLink, archivedNavLink, settingNavLink]

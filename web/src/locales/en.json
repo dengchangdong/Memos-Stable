@@ -111,6 +111,12 @@
       "no-comment": "No comment"
     }
   },
+  "statistics": {
+    "title": "Statistics",
+    "days": "Days",
+    "memos": "Memos",
+    "tags": "Tags"
+  },
   "resource": {
     "no-resources": "No resources.",
     "fetching-data": "Fetching data…",
