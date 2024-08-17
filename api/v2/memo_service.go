@@ -32,68 +32,80 @@ const (
 )
 
 func (s *APIV2Service) CreateMemo(ctx context.Context, request *apiv2pb.CreateMemoRequest) (*apiv2pb.CreateMemoResponse, error) {
-	user, err := getCurrentUser(ctx, s.Store)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user")
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-	}
-	if len(request.Content) > MaxContentLength {
-		return nil, status.Errorf(codes.InvalidArgument, "content too long")
-	}
+    // Check if s.Store is nil
+    if s.Store == nil {
+        return nil, status.Errorf(codes.Internal, "store is not initialized")
+    }
 
-	nodes, err := parser.Parse(tokenizer.Tokenize(request.Content))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse memo content")
-	}
+    user, err := getCurrentUser(ctx, s.Store)
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+    }
+    if user == nil {
+        return nil, status.Errorf(codes.PermissionDenied, "permission denied: user is nil")
+    }
 
-	create := &store.Memo{
-		CreatorID:  user.ID,
-		Content:    request.Content,
-		Visibility: store.Visibility(request.Visibility.String()),
-	}
-	// Find disable public memos system setting.
-	disablePublicMemosSystem, err := s.getDisablePublicMemosSystemSettingValue(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get system setting")
-	}
-	if disablePublicMemosSystem && create.Visibility == store.Public {
-		return nil, status.Errorf(codes.PermissionDenied, "disable public memos system setting is enabled")
-	}
+    if len(request.Content) > MaxContentLength {
+        return nil, status.Errorf(codes.InvalidArgument, "content too long")
+    }
 
-	memo, err := s.Store.CreateMemo(ctx, create)
-	if err != nil {
-		return nil, err
-	}
-	metric.Enqueue("memo create")
+    nodes, err := parser.Parse(tokenizer.Tokenize(request.Content))
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to parse memo content")
+    }
+    // Check if nodes is nil or empty
+    if nodes == nil || len(nodes) == 0 {
+        return nil, status.Errorf(codes.InvalidArgument, "parsed nodes are nil or empty")
+    }
 
-	// Dynamically upsert tags from memo content.
-	traverseASTNodes(nodes, func(node ast.Node) {
-		if tag, ok := node.(*ast.Tag); ok {
-			if _, err := s.Store.UpsertTag(ctx, &store.Tag{
-				Name:      tag.Content,
-				CreatorID: user.ID,
-			}); err != nil {
-				log.Warn("Failed to create tag", zap.Error(err))
-			}
-		}
-	})
+    create := &store.Memo{
+        CreatorID:  user.ID,
+        Content:    request.Content,
+        Visibility: store.Visibility(request.Visibility.String()),
+    }
 
-	memoMessage, err := s.convertMemoFromStore(ctx, memo)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert memo")
-	}
-	// Try to dispatch webhook when memo is created.
-	if err := s.DispatchMemoCreatedWebhook(ctx, memoMessage); err != nil {
-		log.Warn("Failed to dispatch memo created webhook", zap.Error(err))
-	}
+    // Find disable public memos system setting.
+    disablePublicMemosSystem, err := s.getDisablePublicMemosSystemSettingValue(ctx)
+    if err != nil {
+        return nil, status.Errorf(codes.Internal, "failed to get system setting: %v", err)
+    }
+    if disablePublicMemosSystem && create.Visibility == store.Public {
+        return nil, status.Errorf(codes.PermissionDenied, "disable public memos system setting is enabled")
+    }
 
-	response := &apiv2pb.CreateMemoResponse{
-		Memo: memoMessage,
-	}
-	return response, nil
+    memo, err := s.Store.CreateMemo(ctx, create)
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to create memo")
+    }
+    metric.Enqueue("memo create")
+
+    // Dynamically upsert tags from memo content.
+    traverseASTNodes(nodes, func(node ast.Node) {
+        if tag, ok := node.(*ast.Tag); ok {
+            if _, err := s.Store.UpsertTag(ctx, &store.Tag{
+                Name:      tag.Content,
+                CreatorID: user.ID,
+            }); err != nil {
+                log.Warn("Failed to create tag", zap.Error(err))
+            }
+        }
+    })
+
+    memoMessage, err := s.convertMemoFromStore(ctx, memo)
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to convert memo")
+    }
+    // Try to dispatch webhook when memo is created.
+    if err := s.DispatchMemoCreatedWebhook(ctx, memoMessage); err != nil {
+        log.Warn("Failed to dispatch memo created webhook", zap.Error(err))
+    }
+
+    response := &apiv2pb.CreateMemoResponse{
+        Memo: memoMessage,
+    }
+    return response, nil
 }
+
 
 func (s *APIV2Service) ListMemos(ctx context.Context, request *apiv2pb.ListMemosRequest) (*apiv2pb.ListMemosResponse, error) {
 	memoFind := &store.FindMemo{
