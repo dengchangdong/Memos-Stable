@@ -1,7 +1,7 @@
 import { Divider, Tooltip } from "@mui/joy";
 import classNames from "classnames";
 import copy from "copy-to-clipboard";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -75,7 +75,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
     if (event.altKey) {
       showChangeMemoCreatedTsDialog(memo.id);
     } else {
-      navigateTo(`/m/${memo.id}`);
+      navigateTo(`/m/${memo.name}`);
     }
   };
 
@@ -87,7 +87,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
             id: memo.id,
             pinned: false,
           },
-          ["pinned"]
+          ["pinned"],
         );
       } else {
         await memoStore.updateMemo(
@@ -95,7 +95,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
             id: memo.id,
             pinned: true,
           },
-          ["pinned"]
+          ["pinned"],
         );
       }
     } catch (error) {
@@ -106,6 +106,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
   const handleEditMemoClick = () => {
     showMemoEditorDialog({
       memoId: memo.id,
+      cacheKey: `${memo.id}-${memo.updateTime}`,
     });
   };
 
@@ -128,7 +129,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
           id: memo.id,
           rowStatus: RowStatus.ARCHIVED,
         },
-        ["row_status"]
+        ["row_status"],
       );
     } catch (error: any) {
       console.error(error);
@@ -149,11 +150,11 @@ const MemoView: React.FC<Props> = (props: Props) => {
   };
 
   const handleCopyMemoId = () => {
-    copy(String(memo.id));
+    copy(memo.name);
     toast.success("Copied to clipboard!");
   };
 
-  const handleMemoContentClick = async (e: React.MouseEvent) => {
+  const handleMemoContentClick = useCallback(async (e: React.MouseEvent) => {
     const targetEl = e.target as HTMLElement;
 
     if (targetEl.tagName === "IMG") {
@@ -162,7 +163,7 @@ const MemoView: React.FC<Props> = (props: Props) => {
         showPreviewImageDialog([imgUrl], 0);
       }
     }
-  };
+  }, []);
 
   return (
     <div
@@ -245,10 +246,10 @@ const MemoView: React.FC<Props> = (props: Props) => {
                     {t("common.delete")}
                   </span>
                   <Divider className="!my-1" />
-                  <div className="w-full px-3 text-xs text-gray-400">
-                    <span className="cursor-pointer" onClick={handleCopyMemoId}>
-                      ID: <span className="font-mono">{memo.id}</span>
-                    </span>
+                  <div className="w-full pl-3 pr-2 text-xs text-gray-400">
+                    <div className="font-mono max-w-20 cursor-pointer truncate" onClick={handleCopyMemoId}>
+                      ID: {memo.name}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -256,8 +257,14 @@ const MemoView: React.FC<Props> = (props: Props) => {
           )}
         </div>
       </div>
-      <MemoContent memoId={memo.id} nodes={memo.nodes} readonly={readonly} onClick={handleMemoContentClick} />
-      <MemoResourceListView resourceList={memo.resources} />
+      <MemoContent
+        key={`${memo.id}-${memo.updateTime}`}
+        memoId={memo.id}
+        content={memo.content}
+        readonly={readonly}
+        onClick={handleMemoContentClick}
+      />
+      <MemoResourceListView resources={memo.resources} />
       <MemoRelationListView memo={memo} relationList={referenceRelations} />
     </div>
   );

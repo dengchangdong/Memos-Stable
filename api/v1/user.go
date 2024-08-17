@@ -158,7 +158,7 @@ func (s *APIV1Service) CreateUser(c echo.Context) error {
 	if err := userCreate.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user create format").SetInternal(err)
 	}
-	if !usernameMatcher.MatchString(strings.ToLower(userCreate.Username)) {
+	if !util.ResourceNameMatcher.MatchString(strings.ToLower(userCreate.Username)) {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid username %s", userCreate.Username)).SetInternal(err)
 	}
 	// Disallow host user to be created.
@@ -316,6 +316,14 @@ func (s *APIV1Service) DeleteUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Cannot delete current user")
 	}
 
+	findUser, err := s.Store.GetUser(ctx, &store.FindUser{ID: &userID})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to find user").SetInternal(err)
+	}
+	if s.Profile.Mode == "demo" && findUser.Username == "memos-demo" {
+		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized to delete this user in demo mode")
+	}
+
 	if err := s.Store.DeleteUser(ctx, &store.DeleteUser{
 		ID: userID,
 	}); err != nil {
@@ -366,6 +374,10 @@ func (s *APIV1Service) UpdateUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid update user request").SetInternal(err)
 	}
 
+	if s.Profile.Mode == "demo" && *request.Username == "memos-demo" {
+		return echo.NewHTTPError(http.StatusForbidden, "Unauthorized to update user in demo mode")
+	}
+
 	currentTs := time.Now().Unix()
 	userUpdate := &store.UpdateUser{
 		ID:        userID,
@@ -379,7 +391,7 @@ func (s *APIV1Service) UpdateUser(c echo.Context) error {
 		}
 	}
 	if request.Username != nil {
-		if !usernameMatcher.MatchString(strings.ToLower(*request.Username)) {
+		if !util.ResourceNameMatcher.MatchString(strings.ToLower(*request.Username)) {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid username %s", *request.Username)).SetInternal(err)
 		}
 		userUpdate.Username = request.Username
