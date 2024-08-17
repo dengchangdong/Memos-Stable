@@ -11,7 +11,7 @@ const UserBanner = () => {
   const globalStore = useGlobalStore();
   const { systemStatus } = globalStore.state;
   const user = useCurrentUser();
-  const title = user ? user.nickname || user.username : systemStatus.customizedProfile.name || "Memos";
+  const title = user ? user.nickname || user.username : systemStatus.customizedProfile.name || "memos";
   const avatarUrl = user ? user.avatarUrl : systemStatus.customizedProfile.logoUrl;
 
   const handleSignOut = async () => {
