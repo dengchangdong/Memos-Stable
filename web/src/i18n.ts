@@ -5,11 +5,11 @@ import { initReactI18next } from "react-i18next";
 
 export const availableLocales = [
   "en",
-  "zh-CN",
+  "zh-Hans",
 ] as const;
 
 const fallbacks = {
-  zh: ["zh-CN", "en"],
+  zh: ["zh-Hans", "en"],
 } as FallbackLngObjList;
 
 i18n
@@ -21,7 +21,7 @@ i18n
     },
     fallbackLng: {
       ...fallbacks,
-      ...{ default: ["zh-CN"] },
+      ...{ default: ["zh-Hans"] },
     } as FallbackLng,
   });
 
