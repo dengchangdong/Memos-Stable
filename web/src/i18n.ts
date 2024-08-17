@@ -4,33 +4,12 @@ import toast from "react-hot-toast";
 import { initReactI18next } from "react-i18next";
 
 export const availableLocales = [
-  "ar",
-  "de",
   "en",
-  "es",
-  "fr",
-  "hi",
-  "hr",
-  "it",
-  "ja",
-  "ko",
-  "nl",
-  "pl",
-  "pt-BR",
-  "ru",
-  "sl",
-  "sv",
-  "tr",
-  "uk",
-  "vi",
-  "zh-Hans",
-  "zh-Hant",
+  "zh-CN",
 ] as const;
 
 const fallbacks = {
-  "zh-HK": ["zh-Hant", "en"],
-  "zh-TW": ["zh-Hant", "en"],
-  zh: ["zh-Hans", "en"],
+  zh: ["zh-CN", "en"],
 } as FallbackLngObjList;
 
 i18n
@@ -42,7 +21,7 @@ i18n
     },
     fallbackLng: {
       ...fallbacks,
-      ...{ default: ["zh-Hans"] },
+      ...{ default: ["zh-CN"] },
     } as FallbackLng,
   });
 
